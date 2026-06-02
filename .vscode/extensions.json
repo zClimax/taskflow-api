@@ -1,0 +1,25 @@
+{
+  "recommendations": [
+    // ─── TypeScript y JavaScript ────────────────────────────────────────────
+    "dbaeumer.vscode-eslint",           // ESLint: análisis estático de código
+    "esbenp.prettier-vscode",          // Prettier: formateo automático de código
+    "ms-vscode.vscode-typescript-next", // TypeScript más actualizado
+
+    // ─── REST API Development ───────────────────────────────────────────────
+    "rangav.vscode-thunder-client",    // Thunder Client: Postman dentro de VS Code
+    "42crunch.vscode-openapi",         // OpenAPI/Swagger editor con preview
+
+    // ─── Base de Datos ───────────────────────────────────────────────────────
+    "Prisma.prisma",                   // Sintaxis de Prisma schema + autocompletado
+
+    // ─── Git ─────────────────────────────────────────────────────────────────
+    "eamodio.gitlens",                 // GitLens: ver historial de cada línea de código
+    "mhutchie.git-graph",             // Visualización gráfica del historial de Git
+
+    // ─── Developer Experience ───────────────────────────────────────────────
+    "christian-kohler.path-intellisense",  // Autocompletado de rutas de archivos
+    "ms-vscode.vscode-json",           // JSON mejorado con schema validation
+    "yzhang.markdown-all-in-one",     // Markdown mejorado para documentación
+    "PKief.material-icon-theme"        // Íconos bonitos para el explorador de archivos
+  ]
+}

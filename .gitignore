@@ -1,0 +1,44 @@
+# ─── Dependencias ─────────────────────────────────────────────────────────────
+# NUNCA subas node_modules a GitHub. Pesa cientos de MB y se reinstala con npm install
+node_modules/
+
+# ─── Build ────────────────────────────────────────────────────────────────────
+# El código compilado no necesita versionarse, se genera con npm run build
+dist/
+build/
+
+# ─── Variables de Entorno ─────────────────────────────────────────────────────
+# CRÍTICO: Nunca subas secretos como contraseñas, API keys, o tokens a GitHub
+# Un .env expuesto puede comprometer toda tu aplicación y usuarios
+.env
+.env.local
+.env.production
+.env.staging
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ─── Testing ──────────────────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+
+# ─── Sistema Operativo ────────────────────────────────────────────────────────
+.DS_Store          # macOS
+Thumbs.db          # Windows
+desktop.ini        # Windows
+
+# ─── IDEs ─────────────────────────────────────────────────────────────────────
+.vscode/settings.json    # Configuraciones personales de VS Code (sí al .extensions)
+.idea/                   # IntelliJ / WebStorm
+
+# ─── Prisma ───────────────────────────────────────────────────────────────────
+# El cliente generado de Prisma se regenera con prisma generate
+# (NO excluir las migraciones, esas sí se suben)
+
+# ─── Uploads ──────────────────────────────────────────────────────────────────
+uploads/
+public/uploads/

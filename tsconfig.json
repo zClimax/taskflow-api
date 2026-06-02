@@ -1,0 +1,52 @@
+{
+  "compilerOptions": {
+    // ─── Target & Module ──────────────────────────────────────────────────────
+    // A qué versión de JavaScript compilar el código TypeScript
+    "target": "ES2022",
+    // Sistema de módulos: NodeNext es el moderno para Node.js 18+
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+
+    // ─── Output ───────────────────────────────────────────────────────────────
+    // Dónde va el JavaScript compilado (separamos código fuente de compilado)
+    "outDir": "./dist",
+    // Desde dónde leer los archivos fuente
+    "rootDir": "./src",
+
+    // ─── Strictness ───────────────────────────────────────────────────────────
+    // Modo estricto: activa todas las comprobaciones de tipos estrictas
+    // En proyectos profesionales, SIEMPRE se activa esto
+    "strict": true,
+    // No permite variables declaradas pero nunca usadas (código limpio)
+    "noUnusedLocals": true,
+    // No permite parámetros de función declarados pero nunca usados
+    "noUnusedParameters": true,
+    // Obliga a que todas las funciones tengan retorno explícito donde se esperan
+    "noImplicitReturns": true,
+    // Garantiza que todos los casos en un switch sean manejados
+    "noFallthroughCasesInSwitch": true,
+
+    // ─── Interop ──────────────────────────────────────────────────────────────
+    // Permite importar módulos CommonJS (los viejos) como si fueran ES Modules
+    "esModuleInterop": true,
+    // Permite importar módulos sin extensión de archivo
+    "allowSyntheticDefaultImports": true,
+    // Hace que las importaciones sean case-sensitive (importante en Linux/Mac)
+    "forceConsistentCasingInFileNames": true,
+
+    // ─── Developer Experience ─────────────────────────────────────────────────
+    // Genera source maps: permiten ver el código TypeScript original al depurar
+    "sourceMap": true,
+    // Permite usar decoradores (útil para ORMs y frameworks modernos)
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+
+    // ─── Skip ─────────────────────────────────────────────────────────────────
+    // No verificar los tipos de las librerías externas (más rápido)
+    "skipLibCheck": true
+  },
+  // Qué archivos incluir en la compilación
+  "include": ["src/**/*"],
+  // Qué excluir (node_modules nunca debe compilarse)
+  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+}
