@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "02-Express/02-Middleware-Pattern.md",
+                "file": "04-Base-de-Datos/04-Prisma-ORM.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "02-Middleware-Pattern"
+              "title": "04-Prisma-ORM"
             }
           }
         ]
@@ -186,12 +186,12 @@
   "active": "fcad101731b08b9e",
   "lastOpenFiles": [
     "04-Base-de-Datos/04-Modelado-Datos.md",
+    "02-Express/02-Middleware-Pattern.md",
     "04-Base-de-Datos/04-Prisma-ORM.md",
     "03-Diseno-API/03-OpenAPI-Swagger.md",
     "02-Express/02-Express-Fundamentos.md",
     "03-Diseno-API/03-Diseno-API-REST.md",
     "01-Fundamentos-REST/01-Protocolo-HTTP.md",
-    "02-Express/02-Middleware-Pattern.md",
     "01-Fundamentos-REST/01-Metodos-HTTP-Codigos-Estado.md",
     "01-Fundamentos-REST/01-API-REST-Fundamentos.md",
     "00-Entorno/00-Entorno-de-Desarrollo.md",

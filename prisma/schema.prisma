@@ -19,11 +19,10 @@ generator client {
 }
 
 // ── 2. Fuente de Datos ────────────────────────────────────────────────────────
-// Conexión a PostgreSQL usando la variable de entorno DATABASE_URL
-// Prisma lee esta variable del archivo .env automáticamente
+// En Prisma 7, la URL de conexión se configura en prisma.config.ts
+// Este bloque solo declara el proveedor
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

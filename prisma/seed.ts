@@ -18,8 +18,12 @@
  */
 
 import { PrismaClient, TaskStatus, TaskPriority, ProjectRole } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import 'dotenv/config';
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({ connectionString: process.env['DATABASE_URL'] });
+const prisma = new PrismaClient({ adapter });
+
 
 // Hash bcrypt de "Password123!" (generado con bcrypt.hash("Password123!", 12))
 // En el Módulo 6 usaremos la librería bcrypt correctamente
