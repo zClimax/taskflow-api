@@ -1,0 +1,195 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// schema.prisma — Fuente única de verdad del modelo de datos de TaskFlow
+//
+// Este archivo define:
+//   1. El proveedor de base de datos (PostgreSQL)
+//   2. El generador del cliente TypeScript (Prisma Client)
+//   3. Todos los modelos (tablas) y sus relaciones
+//
+// Después de modificar este archivo, siempre ejecutar:
+//   npm run db:migrate    ← en desarrollo (crea migración + aplica)
+//   npm run db:generate   ← regenera el cliente TypeScript
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── 1. Generador ──────────────────────────────────────────────────────────────
+// Le dice a Prisma que genere un cliente TypeScript
+// El cliente queda en node_modules/@prisma/client (no en el código fuente)
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ── 2. Fuente de Datos ────────────────────────────────────────────────────────
+// Conexión a PostgreSQL usando la variable de entorno DATABASE_URL
+// Prisma lee esta variable del archivo .env automáticamente
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ENUMS
+// Los enums en Prisma se convierten en tipos de columna en PostgreSQL
+// Y en tipos TypeScript en el cliente generado — lo mejor de ambos mundos
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Rol global del usuario en la aplicación
+enum UserRole {
+  ADMIN   // Puede ver y gestionar todo
+  MEMBER  // Usuario estándar
+}
+
+// Estado de una tarea (flujo Kanban)
+enum TaskStatus {
+  TODO        // Sin empezar
+  IN_PROGRESS // En progreso
+  IN_REVIEW   // En revisión/QA
+  DONE        // Completada
+}
+
+// Prioridad de una tarea
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+// Rol dentro de un proyecto específico
+enum ProjectRole {
+  OWNER   // Creador del proyecto — control total
+  ADMIN   // Puede gestionar tareas y miembros
+  MEMBER  // Solo puede ver y crear tareas
+  VIEWER  // Solo puede ver
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODELOS
+// Cada modelo = una tabla en PostgreSQL + un tipo TypeScript en el cliente
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── User ──────────────────────────────────────────────────────────────────────
+model User {
+  // Identificador único — usamos CUID2 (más seguro que autoincrement)
+  // @default(cuid()) genera el ID automáticamente en cada INSERT
+  id        String   @id @default(cuid())
+  email     String   @unique  // @unique crea un índice único en la columna
+  name      String
+  password  String   // NUNCA guardar en texto plano — siempre bcrypt hash
+  role      UserRole @default(MEMBER)
+  avatarUrl String?  // '?' = nullable/opcional en Prisma
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt  // @updatedAt se actualiza automáticamente
+
+  // ── Relaciones (no son columnas en la BD — son navegación en Prisma) ──────
+  // Proyectos que este usuario creó (owner)
+  ownedProjects Project[]        @relation("ProjectOwner")
+  // Proyectos en los que participa como miembro
+  projectMemberships ProjectMember[]
+  // Tareas asignadas a este usuario
+  assignedTasks Task[]           @relation("TaskAssignee")
+  // Comentarios escritos por este usuario
+  comments      Comment[]
+  // Refresh tokens activos (para logout e invalidación)
+  refreshTokens RefreshToken[]
+
+  // Índice en email para búsquedas rápidas (ya existe por @unique)
+  @@map("users")  // Nombre de la tabla en PostgreSQL (snake_case por convención)
+}
+
+// ── RefreshToken ──────────────────────────────────────────────────────────────
+// ¿Por qué guardar refresh tokens en la BD?
+// Para poder invalidarlos en logout. Un JWT no se puede "revocar" una vez emitido
+// (dura hasta que expira), pero sí podemos rechazar el refresh token en la BD.
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique  // El token hasheado (nunca en texto plano)
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // onDelete: Cascade = si se borra el User, se borran sus tokens también
+
+  @@map("refresh_tokens")
+}
+
+// ── Project ───────────────────────────────────────────────────────────────────
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relaciones
+  owner   User            @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members ProjectMember[]
+  tasks   Task[]
+
+  @@map("projects")
+}
+
+// ── ProjectMember ─────────────────────────────────────────────────────────────
+// Tabla de unión N:M entre User y Project
+// También almacena el rol del usuario dentro del proyecto específico
+model ProjectMember {
+  id        String      @id @default(cuid())
+  userId    String
+  projectId String
+  role      ProjectRole @default(MEMBER)
+  joinedAt  DateTime    @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Índice único compuesto: un usuario solo puede ser miembro de un proyecto una vez
+  @@unique([userId, projectId])
+  @@map("project_members")
+}
+
+// ── Task ──────────────────────────────────────────────────────────────────────
+model Task {
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  status      TaskStatus   @default(TODO)
+  priority    TaskPriority @default(MEDIUM)
+  dueDate     DateTime?    // Fecha límite opcional
+  projectId   String
+  assigneeId  String?      // Puede estar sin asignar
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relaciones
+  project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignee User?     @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  // onDelete: SetNull = si se borra el usuario asignado, assigneeId queda null (no borra la tarea)
+  comments Comment[]
+
+  // Índice para búsquedas frecuentes (filtrar tareas por proyecto)
+  @@index([projectId])
+  // Índice para filtrar por asignado
+  @@index([assigneeId])
+  // Índice compuesto para ordenar por estado y prioridad
+  @@index([status, priority])
+
+  @@map("tasks")
+}
+
+// ── Comment ───────────────────────────────────────────────────────────────────
+model Comment {
+  id       String   @id @default(cuid())
+  content  String
+  taskId   String
+  authorId String
+  createdAt DateTime @default(now())
+  // Los comentarios no tienen updatedAt — en la mayoría de apps no se editan
+
+  task   Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])  // Índice para listar comentarios de una tarea rápidamente
+  @@map("comments")
+}
