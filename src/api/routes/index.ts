@@ -1,18 +1,20 @@
 /**
- * routes/index.ts — Router principal de la API
+ * routes/index.ts — Router principal de la API v1
  *
- * Este archivo actúa como el "enrutador raíz" que agrupa todos los sub-routers.
- * Cuando añadamos Users, Projects y Tasks, cada uno tendrá su propio router
- * y se montará aquí.
- *
- * Ventaja de este patrón:
- * - app.ts no se satura de rutas
- * - Cada dominio (users, tasks) es independiente y testeable por separado
- * - Cambiar el prefijo /api/v1 a /api/v2 es una sola línea en app.ts
+ * Este archivo es el punto de montaje de todos los sub-routers.
+ * app.ts monta este router bajo /api/v1, por lo que:
+ *   authRouter en '/auth'     → accesible en /api/v1/auth
+ *   usersRouter en '/users'   → accesible en /api/v1/users
+ *   projectsRouter en '...'   → accesible en /api/v1/projects
+ *   tasksRouter en '/tasks'   → accesible en /api/v1/tasks
  */
 
 import { Router, type Request, type Response } from 'express';
 import { config } from '../../config/env.js';
+import { authRouter } from './auth.routes.js';
+import { usersRouter } from './users.routes.js';
+import { projectsRouter } from './projects.routes.js';
+import { tasksRouter } from './tasks.routes.js';
 
 export const apiRouter = Router();
 
@@ -23,22 +25,18 @@ apiRouter.get('/', (_req: Request, res: Response) => {
     version: config.apiVersion,
     status: 'operational',
     environment: config.env,
+    docs: `/api/docs`,
     endpoints: {
-      health: '/health',
-      docs: '/api/docs',
-      users: `/api/${config.apiVersion}/users`,
+      auth:     `/api/${config.apiVersion}/auth`,
+      users:    `/api/${config.apiVersion}/users`,
       projects: `/api/${config.apiVersion}/projects`,
-      tasks: `/api/${config.apiVersion}/tasks`,
+      tasks:    `/api/${config.apiVersion}/tasks`,
     },
   });
 });
 
-// ─── Sub-routers (se irán añadiendo módulo a módulo) ─────────────────────────
-// TODO Módulo 5: import { usersRouter } from './users.js';
-// TODO Módulo 5: apiRouter.use('/users', usersRouter);
-
-// TODO Módulo 5: import { projectsRouter } from './projects.js';
-// TODO Módulo 5: apiRouter.use('/projects', projectsRouter);
-
-// TODO Módulo 5: import { tasksRouter } from './tasks.js';
-// TODO Módulo 5: apiRouter.use('/tasks', tasksRouter);
+// ─── Montaje de sub-routers ───────────────────────────────────────────────────
+apiRouter.use('/auth',     authRouter);
+apiRouter.use('/users',    usersRouter);
+apiRouter.use('/projects', projectsRouter);
+apiRouter.use('/tasks',    tasksRouter);

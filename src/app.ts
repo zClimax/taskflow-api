@@ -16,7 +16,9 @@
  */
 
 import express, { type Application, type Request, type Response } from 'express';
+import swaggerUi from 'swagger-ui-express';
 import { config } from './config/env.js';
+import { swaggerSpec } from './config/swagger.js';
 import { requestLogger } from './api/middleware/logger.js';
 import { notFound } from './api/middleware/notFound.js';
 import { errorHandler } from './api/middleware/errorHandler.js';
@@ -58,7 +60,35 @@ export function createApp(): Application {
     next();
   });
 
-  // ─── 4. Health Check ───────────────────────────────────────────────────────
+  // ─── 4. Swagger UI (Documentación Interactiva) ────────────────────────────
+  // Swagger UI sirve una interfaz web que permite explorar y probar
+  // TODOS los endpoints sin necesidad de Postman.
+  // Solo habilitamos en desarrollo para no exponer la doc internamente en prod.
+  // En producción, se puede proteger con auth o habilitar selectivamente.
+  app.use(
+    '/api/docs',
+    swaggerUi.serve,
+    swaggerUi.setup(swaggerSpec, {
+      customSiteTitle: 'TaskFlow API Docs',
+      customCss: `
+        .swagger-ui .topbar { background-color: #1a1a2e; }
+        .swagger-ui .topbar-wrapper img { content: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🗂️</text></svg>'); }
+      `,
+      swaggerOptions: {
+        persistAuthorization: true, // Recuerda el token entre recargas
+        displayRequestDuration: true,
+        filter: true,
+      },
+    })
+  );
+
+  // Endpoint que devuelve la spec en JSON (útil para tools externas)
+  app.get('/api/docs.json', (_req: Request, res: Response) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(swaggerSpec);
+  });
+
+  // ─── 5. Health Check ───────────────────────────────────────────────────────
   // Sin versión, sin autenticación. Los load balancers lo usan para saber
   // si el servidor está vivo. Deve responder rápido y simple.
   app.get('/health', (_req: Request, res: Response) => {
@@ -71,17 +101,17 @@ export function createApp(): Application {
     });
   });
 
-  // ─── 5. Rutas de la API ────────────────────────────────────────────────────
+  // ─── 6. Rutas de la API ────────────────────────────────────────────────────
   // Montamos todo el router bajo /api/v1
   // Así, una ruta definida como '/' en apiRouter es accesible en '/api/v1/'
   // Y '/users' en usersRouter sería '/api/v1/users'
   app.use(`/api/${config.apiVersion}`, apiRouter);
 
-  // ─── 6. 404 Handler ────────────────────────────────────────────────────────
+  // ─── 7. 404 Handler ────────────────────────────────────────────────────────────
   // Debe ir DESPUÉS de todas las rutas. Si llegamos aquí, ninguna ruta coincidió.
   app.use(notFound);
 
-  // ─── 7. Error Handler ──────────────────────────────────────────────────────
+  // ─── 8. Error Handler ──────────────────────────────────────────────────────
   // SIEMPRE al final. Express lo reconoce por los 4 parámetros: (err, req, res, next)
   app.use(errorHandler);
 
