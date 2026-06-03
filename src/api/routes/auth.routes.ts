@@ -1,13 +1,12 @@
 /**
  * routes/auth.routes.ts — Rutas de autenticación
- *
- * Los comentarios @openapi son leídos por swagger-jsdoc para generar
- * la documentación interactiva en /api/docs.
- * Esto es "docs-as-code": la doc vive junto al código que describe.
  */
 
-import { Router, type Request, type Response, type NextFunction } from 'express';
-import { AppErrors } from '../middleware/errorHandler.js';
+import { Router } from 'express';
+import { authController } from '../auth/auth.controller.js';
+import { authenticate } from '../middleware/authenticate.js';
+import { validate } from '../middleware/validate.js';
+import { RegisterSchema, LoginSchema, RefreshSchema } from '../auth/auth.dto.js';
 
 export const authRouter = Router();
 
@@ -17,8 +16,6 @@ export const authRouter = Router();
  *   post:
  *     tags: [Auth]
  *     summary: Registrar nuevo usuario
- *     description: Crea una nueva cuenta de usuario. Devuelve los tokens de acceso.
- *     security: []  # Este endpoint NO requiere autenticación
  *     requestBody:
  *       required: true
  *       content:
@@ -29,36 +26,27 @@ export const authRouter = Router();
  *             properties:
  *               name:
  *                 type: string
- *                 example: Jorge García
- *                 minLength: 2
- *                 maxLength: 100
+ *                 example: Jorge López
  *               email:
  *                 type: string
  *                 format: email
  *                 example: jorge@example.com
  *               password:
  *                 type: string
- *                 format: password
- *                 example: "MiPassword123!"
- *                 minLength: 8
- *                 description: Mínimo 8 caracteres, una mayúscula y un número
+ *                 example: Password123!
+ *                 description: Mínimo 8 caracteres, una mayúscula, una minúscula y un número
  *     responses:
  *       201:
- *         description: Usuario creado exitosamente
+ *         description: Usuario registrado y tokens generados
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
  *                 data:
- *                   type: object
- *                   properties:
- *                     user:
- *                       $ref: '#/components/schemas/User'
- *                     tokens:
- *                       $ref: '#/components/schemas/AuthTokens'
+ *                   $ref: '#/components/schemas/AuthTokens'
  *       400:
- *         description: Datos inválidos (email mal formado, contraseña corta, etc.)
+ *         description: Datos inválidos
  *         content:
  *           application/json:
  *             schema:
@@ -70,19 +58,7 @@ export const authRouter = Router();
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-authRouter.post('/register', (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    // TODO Módulo 6: implementar lógica real de registro con bcrypt + JWT
-    res.status(201).json({
-      data: {
-        message: '✅ Endpoint de registro — se implementará en el Módulo 6',
-        expectedBody: { name: 'string', email: 'string', password: 'string (min 8 chars)' },
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-});
+authRouter.post('/register', validate({ body: RegisterSchema }), authController.register);
 
 /**
  * @openapi
@@ -90,8 +66,6 @@ authRouter.post('/register', (_req: Request, res: Response, next: NextFunction) 
  *   post:
  *     tags: [Auth]
  *     summary: Iniciar sesión
- *     description: Autentica al usuario y devuelve access token + refresh token.
- *     security: []
  *     requestBody:
  *       required: true
  *       content:
@@ -103,14 +77,13 @@ authRouter.post('/register', (_req: Request, res: Response, next: NextFunction) 
  *               email:
  *                 type: string
  *                 format: email
- *                 example: jorge@example.com
+ *                 example: admin@taskflow.com
  *               password:
  *                 type: string
- *                 format: password
- *                 example: "MiPassword123!"
+ *                 example: Password123!
  *     responses:
  *       200:
- *         description: Login exitoso
+ *         description: Login exitoso — devuelve access token y refresh token
  *         content:
  *           application/json:
  *             schema:
@@ -125,27 +98,14 @@ authRouter.post('/register', (_req: Request, res: Response, next: NextFunction) 
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-authRouter.post('/login', (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    // TODO Módulo 6: verificar credenciales y generar JWT
-    res.json({
-      data: { message: '✅ Endpoint de login — se implementará en el Módulo 6' },
-    });
-  } catch (error) {
-    next(error);
-  }
-});
+authRouter.post('/login', validate({ body: LoginSchema }), authController.login);
 
 /**
  * @openapi
  * /auth/refresh:
  *   post:
  *     tags: [Auth]
- *     summary: Renovar access token
- *     description: |
- *       Usa el refresh token para obtener un nuevo access token sin volver a hacer login.
- *       El access token dura 15 minutos. El refresh token dura 7 días.
- *     security: []
+ *     summary: Renovar access token usando el refresh token
  *     requestBody:
  *       required: true
  *       content:
@@ -156,17 +116,21 @@ authRouter.post('/login', (_req: Request, res: Response, next: NextFunction) => 
  *             properties:
  *               refreshToken:
  *                 type: string
- *                 example: "eyJhbGci..."
  *     responses:
  *       200:
- *         description: Nuevo access token generado
+ *         description: Nuevos tokens generados (token rotation)
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
  *                 data:
- *                   $ref: '#/components/schemas/AuthTokens'
+ *                   type: object
+ *                   properties:
+ *                     accessToken:
+ *                       type: string
+ *                     refreshToken:
+ *                       type: string
  *       401:
  *         description: Refresh token inválido o expirado
  *         content:
@@ -174,35 +138,42 @@ authRouter.post('/login', (_req: Request, res: Response, next: NextFunction) => 
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-authRouter.post('/refresh', (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    res.json({ data: { message: '✅ Refresh token — se implementará en el Módulo 6' } });
-  } catch (error) {
-    next(error);
-  }
-});
+authRouter.post('/refresh', validate({ body: RefreshSchema }), authController.refresh);
 
 /**
  * @openapi
  * /auth/logout:
  *   post:
  *     tags: [Auth]
- *     summary: Cerrar sesión
- *     description: Invalida el refresh token en la base de datos. El access token expira naturalmente.
+ *     summary: Cerrar sesión (invalida el refresh token)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [refreshToken]
+ *             properties:
+ *               refreshToken:
+ *                 type: string
  *     responses:
  *       204:
- *         description: Sesión cerrada exitosamente (sin body)
- *       401:
- *         description: No autenticado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         description: Sesión cerrada
  */
-authRouter.post('/logout', (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    res.status(204).end();
-  } catch (error) {
-    next(error);
-  }
-});
+authRouter.post('/logout', authenticate, authController.logout);
+
+/**
+ * @openapi
+ * /auth/logout-all:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Cerrar sesión en todos los dispositivos
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       204:
+ *         description: Todas las sesiones cerradas
+ */
+authRouter.post('/logout-all', authenticate, authController.logoutAll);

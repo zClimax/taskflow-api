@@ -11,6 +11,7 @@
 
 import { Router } from 'express';
 import { tasksController } from '../tasks/tasks.controller.js';
+import { authenticate } from '../middleware/authenticate.js';
 import { validate, IdParamSchema, CommentParamSchema } from '../middleware/validate.js';
 import {
   CreateTaskSchema,
@@ -20,6 +21,9 @@ import {
 } from '../tasks/tasks.dto.js';
 
 export const tasksRouter = Router();
+
+// Todas las rutas de /tasks requieren estar autenticado
+tasksRouter.use(authenticate);
 
 // ─── TASKS ───────────────────────────────────────────────────────────────────
 

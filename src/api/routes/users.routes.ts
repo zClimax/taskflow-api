@@ -1,10 +1,16 @@
 /**
- * routes/users.routes.ts — Rutas de usuarios
+ * routes/users.routes.ts — Rutas de usuario (requieren autenticación)
  */
 
-import { Router, type Request, type Response, type NextFunction } from 'express';
+import { Router } from 'express';
+import { usersController, UpdateProfileSchema } from '../users/users.module.js';
+import { authenticate } from '../middleware/authenticate.js';
+import { validate } from '../middleware/validate.js';
 
 export const usersRouter = Router();
+
+// Todas las rutas de /users requieren autenticación
+usersRouter.use(authenticate);
 
 /**
  * @openapi
@@ -12,17 +18,18 @@ export const usersRouter = Router();
  *   get:
  *     tags: [Users]
  *     summary: Obtener perfil del usuario autenticado
- *     description: Devuelve los datos del usuario que está haciendo la petición (identificado por el JWT).
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Perfil del usuario
+ *         description: Perfil del usuario con estadísticas
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
  *                 data:
- *                   $ref: '#/components/schemas/User'
+ *                   $ref: '#/components/schemas/UserProfile'
  *       401:
  *         description: No autenticado
  *         content:
@@ -30,24 +37,17 @@ export const usersRouter = Router();
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-usersRouter.get('/me', (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    // TODO Módulo 6: extraer userId del JWT y buscar en BD
-    res.json({ data: { message: '✅ GET /users/me — se implementará en el Módulo 6' } });
-  } catch (error) {
-    next(error);
-  }
-});
+usersRouter.get('/me', usersController.getMe);
 
 /**
  * @openapi
  * /users/me:
  *   patch:
  *     tags: [Users]
- *     summary: Actualizar perfil del usuario
- *     description: Actualiza parcialmente el nombre o email del usuario autenticado.
+ *     summary: Actualizar perfil del usuario autenticado
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
- *       required: true
  *       content:
  *         application/json:
  *           schema:
@@ -55,65 +55,31 @@ usersRouter.get('/me', (_req: Request, res: Response, next: NextFunction) => {
  *             properties:
  *               name:
  *                 type: string
- *                 example: Jorge García Actualizado
- *               email:
+ *               avatarUrl:
  *                 type: string
- *                 format: email
- *                 example: nuevo@example.com
+ *                 format: uri
+ *                 nullable: true
+ *               currentPassword:
+ *                 type: string
+ *                 description: Requerido si se envía newPassword
+ *               newPassword:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Perfil actualizado
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 data:
- *                   $ref: '#/components/schemas/User'
- *       400:
- *         description: Datos inválidos
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       401:
- *         description: No autenticado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  */
-usersRouter.patch('/me', (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    res.json({ data: { message: '✅ PATCH /users/me — se implementará en el Módulo 6' } });
-  } catch (error) {
-    next(error);
-  }
-});
+usersRouter.patch('/me', validate({ body: UpdateProfileSchema }), usersController.updateMe);
 
 /**
  * @openapi
  * /users/me:
  *   delete:
  *     tags: [Users]
- *     summary: Eliminar cuenta del usuario
- *     description: |
- *       Elimina permanentemente la cuenta y todos los datos asociados.
- *       Esta operación es irreversible.
+ *     summary: Eliminar cuenta del usuario autenticado
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       204:
- *         description: Cuenta eliminada exitosamente
- *       401:
- *         description: No autenticado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         description: Cuenta eliminada
  */
-usersRouter.delete('/me', (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    res.status(204).end();
-  } catch (error) {
-    next(error);
-  }
-});
+usersRouter.delete('/me', usersController.deleteMe);

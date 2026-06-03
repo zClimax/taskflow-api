@@ -28,17 +28,7 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import { tasksService } from './tasks.service.js';
 import type { GetTasksQueryDto, CreateTaskDto, UpdateTaskDto, CreateCommentDto } from './tasks.dto.js';
-import { prisma } from '../../infrastructure/database/prisma.js';
-
-// ── Helper temporal: obtener el primer usuario del seed como "autenticado" ────
-// TODO Módulo 6: reemplazar con req.user.id del middleware JWT
-async function getRequesterId(): Promise<string> {
-  const user = await prisma.user.findFirst({
-    where: { email: 'admin@taskflow.com' },
-    select: { id: true },
-  });
-  return user?.id ?? 'unknown';
-}
+// req.user viene del middleware authenticate (declarado en src/types/express.d.ts)
 
 export const tasksController = {
   // ── GET /tasks ─────────────────────────────────────────────────────────────
@@ -48,7 +38,7 @@ export const tasksController = {
       // (page y limit ya son numbers, no strings)
       const query = res.locals['parsedQuery'] as GetTasksQueryDto;
       const result = await tasksService.getTasks(query);
-      res.json(result);
+      res.json(result); // GET /tasks no requiere userId — lista con filtros
     } catch (error) {
       next(error);
     }
@@ -69,8 +59,7 @@ export const tasksController = {
   async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const dto = req.body as CreateTaskDto;
-      const requesterId = await getRequesterId();
-      const result = await tasksService.createTask(dto, requesterId);
+      const result = await tasksService.createTask(dto, req.user!.id);
       // 201 Created: se creó un nuevo recurso
       res.status(201).json(result);
     } catch (error) {
@@ -83,8 +72,7 @@ export const tasksController = {
     try {
       const { id } = req.params;
       const dto = req.body as UpdateTaskDto;
-      const requesterId = await getRequesterId();
-      const result = await tasksService.updateTask(id, dto, requesterId);
+      const result = await tasksService.updateTask(id, dto, req.user!.id);
       res.json(result);
     } catch (error) {
       next(error);
@@ -95,8 +83,7 @@ export const tasksController = {
   async remove(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const requesterId = await getRequesterId();
-      await tasksService.deleteTask(id, requesterId);
+      await tasksService.deleteTask(id, req.user!.id);
       // 204 No Content: operación exitosa sin body de respuesta
       res.status(204).end();
     } catch (error) {
@@ -120,8 +107,7 @@ export const tasksController = {
     try {
       const { id } = req.params;
       const dto = req.body as CreateCommentDto;
-      const requesterId = await getRequesterId();
-      const result = await tasksService.createComment(id, dto, requesterId);
+      const result = await tasksService.createComment(id, dto, req.user!.id);
       res.status(201).json(result);
     } catch (error) {
       next(error);
@@ -132,8 +118,7 @@ export const tasksController = {
   async deleteComment(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id, commentId } = req.params;
-      const requesterId = await getRequesterId();
-      await tasksService.deleteComment(id, commentId, requesterId);
+      await tasksService.deleteComment(id, commentId, req.user!.id);
       res.status(204).end();
     } catch (error) {
       next(error);

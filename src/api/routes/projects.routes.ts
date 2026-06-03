@@ -4,6 +4,7 @@
 
 import { Router } from 'express';
 import { projectsController } from '../projects/projects.controller.js';
+import { authenticate } from '../middleware/authenticate.js';
 import { validate, IdParamSchema } from '../middleware/validate.js';
 import {
   CreateProjectSchema,
@@ -12,6 +13,9 @@ import {
 } from '../projects/projects.dto.js';
 
 export const projectsRouter = Router();
+
+// Todas las rutas de /projects requieren estar autenticado
+projectsRouter.use(authenticate);
 
 /**
  * @openapi
