@@ -1,8 +1,15 @@
 /**
- * routes/projects.routes.ts — Rutas de proyectos
+ * routes/projects.routes.ts — Rutas de proyectos con validación y controller reales
  */
 
-import { Router, type Request, type Response, type NextFunction } from 'express';
+import { Router } from 'express';
+import { projectsController } from '../projects/projects.controller.js';
+import { validate, IdParamSchema } from '../middleware/validate.js';
+import {
+  CreateProjectSchema,
+  UpdateProjectSchema,
+  GetProjectsQuerySchema,
+} from '../projects/projects.dto.js';
 
 export const projectsRouter = Router();
 
@@ -12,21 +19,13 @@ export const projectsRouter = Router();
  *   get:
  *     tags: [Projects]
  *     summary: Listar proyectos del usuario
- *     description: Devuelve todos los proyectos donde el usuario es owner o miembro.
  *     parameters:
  *       - in: query
  *         name: page
- *         schema:
- *           type: integer
- *           default: 1
- *         description: Número de página
+ *         schema: { type: integer, default: 1 }
  *       - in: query
  *         name: limit
- *         schema:
- *           type: integer
- *           default: 20
- *           maximum: 100
- *         description: Resultados por página (máximo 100)
+ *         schema: { type: integer, default: 20 }
  *     responses:
  *       200:
  *         description: Lista de proyectos con paginación
@@ -41,31 +40,19 @@ export const projectsRouter = Router();
  *                     $ref: '#/components/schemas/Project'
  *                 pagination:
  *                   $ref: '#/components/schemas/Pagination'
- *       401:
- *         description: No autenticado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  */
-projectsRouter.get('/', (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    res.json({
-      data: [],
-      pagination: { total: 0, page: 1, limit: 20, totalPages: 0 },
-      message: '✅ GET /projects — se implementará en el Módulo 5',
-    });
-  } catch (error) {
-    next(error);
-  }
-});
+projectsRouter.get(
+  '/',
+  validate({ query: GetProjectsQuerySchema }),
+  projectsController.getAll
+);
 
 /**
  * @openapi
  * /projects:
  *   post:
  *     tags: [Projects]
- *     summary: Crear nuevo proyecto
+ *     summary: Crear proyecto
  *     requestBody:
  *       required: true
  *       content:
@@ -77,12 +64,8 @@ projectsRouter.get('/', (_req: Request, res: Response, next: NextFunction) => {
  *               name:
  *                 type: string
  *                 example: Mi Nuevo Proyecto
- *                 minLength: 2
- *                 maxLength: 100
  *               description:
  *                 type: string
- *                 example: Descripción opcional del proyecto
- *                 maxLength: 500
  *     responses:
  *       201:
  *         description: Proyecto creado
@@ -94,25 +77,17 @@ projectsRouter.get('/', (_req: Request, res: Response, next: NextFunction) => {
  *                 data:
  *                   $ref: '#/components/schemas/Project'
  *       400:
- *         description: Datos inválidos
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       401:
- *         description: No autenticado
+ *         description: Validación fallida
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-projectsRouter.post('/', (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    res.status(201).json({ data: { message: '✅ POST /projects — Módulo 5' } });
-  } catch (error) {
-    next(error);
-  }
-});
+projectsRouter.post(
+  '/',
+  validate({ body: CreateProjectSchema }),
+  projectsController.create
+);
 
 /**
  * @openapi
@@ -124,10 +99,7 @@ projectsRouter.post('/', (_req: Request, res: Response, next: NextFunction) => {
  *       - in: path
  *         name: id
  *         required: true
- *         schema:
- *           type: string
- *         description: ID del proyecto
- *         example: cuid2abc123
+ *         schema: { type: string }
  *     responses:
  *       200:
  *         description: Proyecto encontrado
@@ -138,18 +110,6 @@ projectsRouter.post('/', (_req: Request, res: Response, next: NextFunction) => {
  *               properties:
  *                 data:
  *                   $ref: '#/components/schemas/Project'
- *       401:
- *         description: No autenticado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       403:
- *         description: Sin permiso para ver este proyecto
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *       404:
  *         description: Proyecto no encontrado
  *         content:
@@ -157,13 +117,11 @@ projectsRouter.post('/', (_req: Request, res: Response, next: NextFunction) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-projectsRouter.get('/:id', (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    res.json({ data: { message: '✅ GET /projects/:id — Módulo 5' } });
-  } catch (error) {
-    next(error);
-  }
-});
+projectsRouter.get(
+  '/:id',
+  validate({ params: IdParamSchema }),
+  projectsController.getById
+);
 
 /**
  * @openapi
@@ -171,13 +129,11 @@ projectsRouter.get('/:id', (_req: Request, res: Response, next: NextFunction) =>
  *   patch:
  *     tags: [Projects]
  *     summary: Actualizar proyecto
- *     description: Solo el owner del proyecto puede actualizarlo.
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
- *         schema:
- *           type: string
+ *         schema: { type: string }
  *     requestBody:
  *       required: true
  *       content:
@@ -185,12 +141,8 @@ projectsRouter.get('/:id', (_req: Request, res: Response, next: NextFunction) =>
  *           schema:
  *             type: object
  *             properties:
- *               name:
- *                 type: string
- *                 example: Nombre Actualizado
- *               description:
- *                 type: string
- *                 example: Nueva descripción
+ *               name: { type: string }
+ *               description: { type: string, nullable: true }
  *     responses:
  *       200:
  *         description: Proyecto actualizado
@@ -201,32 +153,12 @@ projectsRouter.get('/:id', (_req: Request, res: Response, next: NextFunction) =>
  *               properties:
  *                 data:
  *                   $ref: '#/components/schemas/Project'
- *       401:
- *         description: No autenticado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       403:
- *         description: Solo el owner puede editar el proyecto
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       404:
- *         description: Proyecto no encontrado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  */
-projectsRouter.patch('/:id', (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    res.json({ data: { message: '✅ PATCH /projects/:id — Módulo 5' } });
-  } catch (error) {
-    next(error);
-  }
-});
+projectsRouter.patch(
+  '/:id',
+  validate({ params: IdParamSchema, body: UpdateProjectSchema }),
+  projectsController.update
+);
 
 /**
  * @openapi
@@ -234,39 +166,23 @@ projectsRouter.patch('/:id', (_req: Request, res: Response, next: NextFunction) 
  *   delete:
  *     tags: [Projects]
  *     summary: Eliminar proyecto
- *     description: Solo el owner puede eliminar. Elimina también todas las tareas del proyecto.
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
- *         schema:
- *           type: string
+ *         schema: { type: string }
  *     responses:
  *       204:
  *         description: Proyecto eliminado
- *       401:
- *         description: No autenticado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *       403:
- *         description: Solo el owner puede eliminar el proyecto
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       404:
- *         description: Proyecto no encontrado
+ *         description: Sin permiso
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-projectsRouter.delete('/:id', (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    res.status(204).end();
-  } catch (error) {
-    next(error);
-  }
-});
+projectsRouter.delete(
+  '/:id',
+  validate({ params: IdParamSchema }),
+  projectsController.remove
+);
