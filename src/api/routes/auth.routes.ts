@@ -7,6 +7,9 @@ import { authController } from '../auth/auth.controller.js';
 import { authenticate } from '../middleware/authenticate.js';
 import { validate } from '../middleware/validate.js';
 import { RegisterSchema, LoginSchema, RefreshSchema } from '../auth/auth.dto.js';
+import { authRateLimitMiddleware } from '../middleware/security.js';
+// authRateLimitMiddleware: 20 intentos por IP cada 15 min
+// Solo se aplica a register y login — los endpoints más expuestos a fuerza bruta
 
 export const authRouter = Router();
 
@@ -58,7 +61,7 @@ export const authRouter = Router();
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-authRouter.post('/register', validate({ body: RegisterSchema }), authController.register);
+authRouter.post('/register', authRateLimitMiddleware, validate({ body: RegisterSchema }), authController.register);
 
 /**
  * @openapi
@@ -98,7 +101,7 @@ authRouter.post('/register', validate({ body: RegisterSchema }), authController.
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-authRouter.post('/login', validate({ body: LoginSchema }), authController.login);
+authRouter.post('/login', authRateLimitMiddleware, validate({ body: LoginSchema }), authController.login);
 
 /**
  * @openapi
