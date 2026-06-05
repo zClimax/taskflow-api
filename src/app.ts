@@ -117,3 +117,7 @@ export function createApp(): Application {
 
   return app;
 }
+
+// Instancia exportada para uso en tests con Supertest
+// Supertest no necesita server.listen() — llama directamente al app
+export const app = createApp();

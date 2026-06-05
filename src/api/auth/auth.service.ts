@@ -98,9 +98,11 @@ export const authService = {
     const GENERIC_ERROR = 'Email o contraseña incorrectos';
 
     if (!user) {
-      // Hacemos bcrypt.compare de todos modos para evitar timing attacks
-      // (si retornamos inmediatamente cuando no existe, el tiempo de respuesta revela que el email no existe)
-      await bcrypt.compare(dto.password, '$2b$12$dummy_hash_to_prevent_timing_attack');
+      // Hacemos bcrypt.compare de todos modos para evitar timing attacks.
+      // IMPORTANTE: debe ser un hash bcrypt VÁLIDO — uno inválido lanza un error
+      // en lugar de devolver false, lo que rompería el flujo y generaría un 500.
+      const DUMMY_HASH = '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LeKRkzZ4l7a8XyJxC';
+      await bcrypt.compare(dto.password, DUMMY_HASH).catch(() => false);
       throw AppErrors.unauthorized(GENERIC_ERROR);
     }
 
