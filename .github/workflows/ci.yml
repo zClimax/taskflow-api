@@ -1,0 +1,106 @@
+name: CI — Tests & Type Check
+
+# ────────────────────────────────────────────────────────────────────────────────
+# ¿Cuándo se ejecuta este workflow?
+# ────────────────────────────────────────────────────────────────────────────────
+# - En cada pull_request hacia main: garantiza que el código que llega a main
+#   está testeado y compila correctamente.
+# - En cada push a main: también corre para detectar problemas en merges directos.
+#
+# Si este workflow FALLA, el código NO se despliega (GitHub bloquea el merge
+# si configuras "Required checks" en Branch Protection Rules).
+# ────────────────────────────────────────────────────────────────────────────────
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    name: Test & Build
+    runs-on: ubuntu-latest  # Máquina virtual Linux gratuita en GitHub
+
+    # ── Servicio PostgreSQL de test ─────────────────────────────────────────────
+    # GitHub Actions puede levantar servicios Docker junto al job.
+    # Aquí levantamos una BD PostgreSQL limpia para los tests de integración.
+    services:
+      postgres:
+        image: postgres:17-alpine  # Alpine: imagen más pequeña, arranca más rápido
+        env:
+          POSTGRES_DB: taskflow_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        # Las opciones de health check aseguran que el job espera a que
+        # PostgreSQL esté listo antes de intentar conectarse.
+
+    steps:
+      # ── 1. Checkout del código ────────────────────────────────────────────────
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      # ── 2. Configurar Node.js ─────────────────────────────────────────────────
+      - name: ⚙️ Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'  # Cachea node_modules entre ejecuciones (más rápido)
+
+      # ── 3. Instalar dependencias ──────────────────────────────────────────────
+      - name: 📦 Install dependencies
+        run: npm ci
+        # npm ci: instala EXACTAMENTE lo que está en package-lock.json
+        # Más rápido y reproducible que npm install en CI
+
+      # ── 4. Verificar tipos de TypeScript ─────────────────────────────────────
+      - name: 🔍 TypeScript type check
+        run: npx tsc --noEmit
+        # --noEmit: solo verifica tipos, no genera archivos
+        # Si hay errores de tipo, el workflow falla aquí
+
+      # ── 5. Build de producción ────────────────────────────────────────────────
+      - name: 🔨 Build
+        run: npx prisma generate && npm run build
+        # Verificamos que el código compila a JavaScript correctamente
+        # (el deploy necesitará este paso también)
+
+      # ── 6. Aplicar migraciones a la BD de test ────────────────────────────────
+      - name: 🗄️ Run database migrations
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/taskflow_test
+
+      # ── 7. Ejecutar los tests ─────────────────────────────────────────────────
+      - name: 🧪 Run tests
+        run: npm test
+        env:
+          # Variables de entorno disponibles para los tests
+          NODE_ENV: test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/taskflow_dev
+          DATABASE_URL_TEST: postgresql://postgres:postgres@localhost:5432/taskflow_test
+
+          # En CI usamos secrets de GitHub (configurados en Settings → Secrets)
+          # para las claves JWT — no hardcodeamos en el código
+          JWT_ACCESS_SECRET: ${{ secrets.JWT_ACCESS_SECRET }}
+          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
+          JWT_ACCESS_EXPIRES_IN: 15m
+          JWT_REFRESH_EXPIRES_IN: 7d
+
+          # Valores por defecto para CI (no importa cuál sea el valor)
+          PORT: 3000
+          API_VERSION: v1
+          CORS_ORIGIN: http://localhost:5173
+
+      # ── 8. (Opcional) Reporte de cobertura ────────────────────────────────────
+      # Descomenta esto cuando quieras ver la cobertura en cada PR:
+      # - name: 📊 Coverage report
+      #   run: npm run test:coverage
+      #   if: github.event_name == 'pull_request'

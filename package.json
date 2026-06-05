@@ -7,7 +7,9 @@
   "scripts": {
     "dev": "npx tsx watch src/server.ts",
     "build": "tsc",
+    "typecheck": "tsc --noEmit",
     "start": "node dist/server.js",
+    "prestart": "npx prisma migrate deploy",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
     "test": "vitest run",

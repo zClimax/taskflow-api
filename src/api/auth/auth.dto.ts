@@ -6,18 +6,18 @@ import { z } from 'zod';
 
 export const RegisterSchema = z.object({
   name: z
-    .string({ required_error: 'El nombre es requerido' })
+    .string({ error: 'El nombre es requerido' })
     .min(2, 'El nombre debe tener al menos 2 caracteres')
     .max(50, 'El nombre no puede exceder 50 caracteres')
     .trim(),
 
   email: z
-    .string({ required_error: 'El email es requerido' })
+    .string({ error: 'El email es requerido' })
     .email('Formato de email inválido')
     .toLowerCase(), // Normalizar: "Jorge@GMAIL.com" → "jorge@gmail.com"
 
   password: z
-    .string({ required_error: 'La contraseña es requerida' })
+    .string({ error: 'La contraseña es requerida' })
     .min(8, 'La contraseña debe tener al menos 8 caracteres')
     .max(72, 'La contraseña no puede exceder 72 caracteres') // Límite de bcrypt
     .regex(
@@ -32,7 +32,7 @@ export const LoginSchema = z.object({
 });
 
 export const RefreshSchema = z.object({
-  refreshToken: z.string({ required_error: 'El refresh token es requerido' }),
+  refreshToken: z.string({ error: 'El refresh token es requerido' }),
 });
 
 export type RegisterDto = z.infer<typeof RegisterSchema>;

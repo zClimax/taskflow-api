@@ -13,7 +13,7 @@
  * ❌ NO lanza errores de negocio (eso va en el Service)
  */
 
-import { type Task, type Comment, type Prisma } from '@prisma/client';
+import { type Comment, type Prisma } from '@prisma/client';
 import { prisma } from '../../infrastructure/database/prisma.js';
 import type { CreateTaskDto, UpdateTaskDto, GetTasksQueryDto } from './tasks.dto.js';
 

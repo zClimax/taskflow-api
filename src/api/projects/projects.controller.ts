@@ -1,11 +1,20 @@
 /**
  * projects/projects.controller.ts — Handlers HTTP para Projects
+ *
+ * Usamos Request genérico con params tipados para evitar el error
+ * "string | string[]" que Express v5 introduce en req.params.
+ * Request<{ id: string }> garantiza que id es siempre un string.
  */
 
 import { type Request, type Response, type NextFunction } from 'express';
 import { projectsService } from './projects.service.js';
 import type { GetProjectsQueryDto, CreateProjectDto, UpdateProjectDto } from './projects.dto.js';
 // req.user viene del middleware authenticate (declarado en src/types/express.d.ts)
+
+// Helper: extrae el id como string simple
+function getId(req: Request): string {
+  return req.params['id'] as string;
+}
 
 export const projectsController = {
   async getAll(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -18,11 +27,9 @@ export const projectsController = {
     }
   },
 
-
   async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { id } = req.params;
-      const result = await projectsService.getProjectById(id, req.user!.id);
+      const result = await projectsService.getProjectById(getId(req), req.user!.id);
       res.json(result);
     } catch (error) {
       next(error);
@@ -41,9 +48,8 @@ export const projectsController = {
 
   async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { id } = req.params;
       const dto = req.body as UpdateProjectDto;
-      const result = await projectsService.updateProject(id, dto, req.user!.id);
+      const result = await projectsService.updateProject(getId(req), dto, req.user!.id);
       res.json(result);
     } catch (error) {
       next(error);
@@ -52,8 +58,7 @@ export const projectsController = {
 
   async remove(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { id } = req.params;
-      await projectsService.deleteProject(id, req.user!.id);
+      await projectsService.deleteProject(getId(req), req.user!.id);
       res.status(204).end();
     } catch (error) {
       next(error);

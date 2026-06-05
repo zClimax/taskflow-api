@@ -87,8 +87,9 @@ export const tasksService = {
     return { data: task };
   },
 
-  // ── Actualizar tarea ───────────────────────────────────────────────────────
-  async updateTask(id: string, dto: UpdateTaskDto, requesterId: string) {
+  // ── Actualizar tarea ────────────────────────────────────────────────────────────────
+  // Nota: _requesterId recibido para futura impl. de control de permisos por rol
+  async updateTask(id: string, dto: UpdateTaskDto, _requesterId: string) {
     // Verificar que la tarea existe
     const task = await tasksRepository.findById(id);
     if (!task) {
@@ -114,7 +115,8 @@ export const tasksService = {
   },
 
   // ── Eliminar tarea ─────────────────────────────────────────────────────────
-  async deleteTask(id: string, requesterId: string) {
+  // Nota: _requesterId recibido para futura impl. de control de permisos por rol
+  async deleteTask(id: string, _requesterId: string) {
     const task = await tasksRepository.findById(id);
     if (!task) {
       throw AppErrors.notFound(`Tarea con ID '${id}'`);

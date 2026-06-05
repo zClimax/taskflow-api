@@ -1,0 +1,39 @@
+# railway.toml — Configuración de Railway
+#
+# Railway lee este archivo para saber cómo construir y ejecutar tu app.
+# Es el equivalente a Procfile en Heroku o app.yaml en Google App Engine.
+#
+# Documentación: https://docs.railway.app/reference/config-as-code
+
+[build]
+# Comando para compilar TypeScript a JavaScript
+builder = "NIXPACKS"
+buildCommand = "npm ci && npx prisma generate && npm run build"
+#
+# Explicación:
+#   npm ci          → instala dependencias exactas del package-lock.json (más rápido y reproducible)
+#   prisma generate → genera el Prisma Client (necesario antes de compilar)
+#   npm run build   → ejecuta tsc (compila TS → JS en ./dist)
+
+[deploy]
+# Comando para arrancar la app en producción
+startCommand = "npx prisma migrate deploy && node dist/server.js"
+#
+# Explicación:
+#   prisma migrate deploy → aplica las migraciones pendientes (sin interactividad)
+#                           Diferencia con migrate dev: no crea nuevas migraciones
+#   node dist/server.js   → arranca el servidor compilado (no tsx, no ts-node)
+#
+# ORDEN CRÍTICO: Las migraciones ANTES de arrancar el servidor.
+# Si el servidor arranca con un schema desactualizado, habrá errores de BD.
+
+healthcheckPath = "/health"
+# Railway hace GET /health periódicamente para verificar que la app está viva.
+# Si responde 200, el deploy es exitoso. Si no responde, Railway hace rollback.
+
+healthcheckTimeout = 300
+# Tiempo máximo (segundos) para que la app arranque y pase el health check
+
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+# Si la app crashea, Railway la reinicia hasta 3 veces antes de rendirse

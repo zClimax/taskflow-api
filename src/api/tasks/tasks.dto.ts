@@ -25,7 +25,7 @@ const TaskPriorityEnum = z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']);
 // ── Schema para crear una tarea (POST /tasks) ─────────────────────────────────
 export const CreateTaskSchema = z.object({
   title: z
-    .string({ required_error: 'El título es requerido' })
+    .string({ error: 'El título es requerido' })
     .min(2, 'El título debe tener al menos 2 caracteres')
     .max(200, 'El título no puede exceder 200 caracteres')
     .trim(),
@@ -36,7 +36,7 @@ export const CreateTaskSchema = z.object({
     .optional(),
 
   projectId: z
-    .string({ required_error: 'El ID del proyecto es requerido' })
+    .string({ error: 'El ID del proyecto es requerido' })
     .min(1, 'El ID del proyecto no puede estar vacío'),
 
   assigneeId: z.string().optional().nullable(),
@@ -85,7 +85,7 @@ export const GetTasksQuerySchema = PaginationSchema.extend({
 // ── Schema para crear comentario ──────────────────────────────────────────────
 export const CreateCommentSchema = z.object({
   content: z
-    .string({ required_error: 'El contenido del comentario es requerido' })
+    .string({ error: 'El contenido del comentario es requerido' })
     .min(1, 'El comentario no puede estar vacío')
     .max(2000, 'El comentario no puede exceder 2000 caracteres')
     .trim(),

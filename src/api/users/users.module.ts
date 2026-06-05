@@ -75,7 +75,6 @@ export const usersService = {
 
 // ── Controller ────────────────────────────────────────────────────────────────
 import { type Request, type Response, type NextFunction } from 'express';
-import { validate } from '../middleware/validate.js';
 
 export const usersController = {
   async getMe(req: Request, res: Response, next: NextFunction): Promise<void> {
